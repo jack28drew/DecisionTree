@@ -19,13 +19,22 @@
 
 using namespace std;
 
+struct node {
+	vector<vector<string> > data;
+	pair<int, string> splitAttribute;
+	string label;
+	bool isLeaf;
+	node* left;
+	node* right;
+};
+
 void parseData(ifstream&, vector<vector<string> >&, vector<int>);			//read file into 2d vector
 void clearColumn(vector<vector<string> >&, vector<int>);
 void printTable(vector<vector<string> >);
 void buildClassList(vector<vector<string> >&, vector<string>&, vector<int>&);
 void classCount(vector<vector<string> >, vector<string>, vector<int>&);
 pair<int,double> calculateInfoGain(vector<vector<string> >&, int column);	//calculates and returns optimal info gain and split point
-pair<int, int> findSplitAttribute(vector<vector<string> >&);				//finds the split attribute index first and returns the split point along with
+pair<int, int> findSplitAttribute(vector<vector<string> >);				//finds the split attribute index first and returns the split point along with
 
 int partition(vector<vector<string> >&, int, int, int);
 void quickSort(vector<vector<string> >&, int, int, int, int);

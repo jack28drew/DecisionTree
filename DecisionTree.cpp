@@ -136,7 +136,7 @@ pair<int, double> calculateInfoGain(vector<vector<string> > &data, int column) {
 	return infoSplit;
 }
 
-pair<int, int> findSplitAttribute(vector<vector<string> > &data) {
+pair<int, int> findSplitAttribute(vector<vector<string> > data) {
 	vector<pair<int, double> > attributeInfo;			//stores optimal split point and info gain for each attribute
 	int highestGain = 0;
 
@@ -156,6 +156,56 @@ pair<int, int> findSplitAttribute(vector<vector<string> > &data) {
 		}
 	}
 	return splitAttribute;
+}
+
+
+
+void buildTree(node* root, vector<vector<string> > data, vector<int> attributes) {
+
+	while(data.size() > 1) {
+		if(root == NULL) {
+			node *rootNode = createNode(data, attributes);
+			root = rootNode;
+
+		}
+
+		else {
+			pair<int, int> splitAttributeInfo;					//split attribute first, index of split second
+
+			splitAttributeInfo = findSplitAttribute(data);
+			quickSort(data, 0, data.size()-1, data.size(), splitAttributeInfo.first);
+
+			vector<vector<string> > left(data.begin(), data.begin() + splitAttributeInfo.second);
+			vector<vector<string> > right(data.begin() + splitAttributeInfo.second, data.end());
+
+
+		}
+
+	}
+
+
+
+}
+
+node* createNode(vector<vector<string> > data, vector<int> attributes) {
+	vector<string> classList;
+	node* newNode = new node;
+
+	buildClassList(data, classList);
+
+	newNode->data = data;
+
+	if(classList.size() <= 1) {
+		if(classList.size() == 0 ) {
+			cerr << "node contains no tuples";
+			exit (EXIT_FAILURE);
+		}
+		newNode->isLeaf = true;
+	}
+	newNode->left = NULL;
+	newNode->right = NULL;
+
+	return (newNode);
 }
 
 //*****************************************//

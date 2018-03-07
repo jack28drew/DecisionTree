@@ -25,11 +25,12 @@ int main(int argc, char** argv) {
 	sort(attributes.begin(), attributes.end());
 
 	vector<vector<string> > data;
+
+	node* root = NULL;
+
 	pair<int, int> x;
 
 	parseData(fin, data, attributes);
-	quickSort(data, 0, data.size()-1, data.size(), 0);
-	printTable(data);
 	x = findSplitAttribute(data);
 
 	cout << x.first << ": " << x.second << endl;
