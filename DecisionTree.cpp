@@ -138,13 +138,10 @@ pair<int, double> calculateInfoGain(vector<vector<string> > &data, int column) {
 
 pair<int, int> findSplitAttribute(vector<vector<string> > data) {
 	vector<pair<int, double> > attributeInfo;			//stores optimal split point and info gain for each attribute
-	int highestGain = 0;
+	double highestGain = 0;
 
 	for(int i=0; i < data[0].size()-1; i++)
 		attributeInfo.push_back(calculateInfoGain(data, i));
-
-	for(int i=0; i < attributeInfo.size(); i++)
-		cout << "split point: " << attributeInfo[i].first << "  info gain: " << attributeInfo[i].second << endl;
 
 	pair<int, int> splitAttribute (0, 0);				//first = attribute index, second = split point
 
@@ -158,54 +155,90 @@ pair<int, int> findSplitAttribute(vector<vector<string> > data) {
 	return splitAttribute;
 }
 
-
-
-void buildTree(node* root, vector<vector<string> > data, vector<int> attributes) {
-
-	while(data.size() > 1) {
-		if(root == NULL) {
-			node *rootNode = createNode(data, attributes);
-			root = rootNode;
-
-		}
-
-		else {
-			pair<int, int> splitAttributeInfo;					//split attribute first, index of split second
-
-			splitAttributeInfo = findSplitAttribute(data);
-			quickSort(data, 0, data.size()-1, data.size(), splitAttributeInfo.first);
-
-			vector<vector<string> > left(data.begin(), data.begin() + splitAttributeInfo.second);
-			vector<vector<string> > right(data.begin() + splitAttributeInfo.second, data.end());
-
-
-		}
-
-	}
-
-
-
-}
-
-node* createNode(vector<vector<string> > data, vector<int> attributes) {
+node* buildTree(vector<vector<string> > data, vector<int> attributes) {
 	vector<string> classList;
+	vector<int> numOfEach;
 	node* newNode = new node;
 
 	buildClassList(data, classList);
+	classCount(data, classList, numOfEach);
+
+	string largestClass;
+	int highestCount = 0;
+
+	for(int i=0; i < classList.size(); i++) {
+		if(numOfEach[i] > highestCount) {
+			highestCount = numOfEach[i];
+			largestClass = classList[i];
+		}
+	}
+
+	if(classList.size() == 1) {
+		newNode->data = data;
+		newNode->label = classList[0];
+		newNode->isLeaf = true;
+		newNode->left = NULL;
+		newNode->right = NULL;
+		return newNode;
+	}
+
+	if(attributes.size() == 0) {
+
+		newNode->data = data;
+		newNode->label = largestClass;
+		newNode->isLeaf = true;
+		newNode->left = NULL;
+		newNode->right = NULL;
+		return newNode;
+	}
+
+	pair<int, int> splitAttribute = findSplitAttribute(data);
+	int attribute = splitAttribute.first;
+	int splitIndex = splitAttribute.second;
+
+	cout << attribute << endl;
 
 	newNode->data = data;
-
-	if(classList.size() <= 1) {
-		if(classList.size() == 0 ) {
-			cerr << "node contains no tuples";
-			exit (EXIT_FAILURE);
-		}
-		newNode->isLeaf = true;
-	}
+	newNode->label = attribute;
+	newNode->isLeaf = false;
 	newNode->left = NULL;
 	newNode->right = NULL;
 
-	return (newNode);
+	vector<vector<string> > left(data.begin(), data.begin() + splitIndex);
+	vector<vector<string> > right(data.begin() + splitIndex, data.end());
+
+	if(left.size() == 0) {
+		node* leftNode = new node;
+		leftNode->label = largestClass;
+		leftNode->isLeaf = true;
+		leftNode->left = NULL;
+		leftNode->right = NULL;
+	}
+	else
+		newNode->left = buildTree(left, attributes);
+
+	if(right.size() == 0) {
+			node* rightNode = new node;
+			rightNode->label = largestClass;
+			rightNode->isLeaf = true;
+			rightNode->left = NULL;
+			rightNode->right = NULL;
+		}
+		else
+			newNode->right = buildTree(right, attributes);
+
+	return newNode;
+}
+
+void printTree(node* currentNode, int depth) {
+	if(currentNode == NULL)
+		return;
+
+	if(depth == 0) {
+		cout << "root: " << currentNode->splitAttribute;
+	}
+
+
 }
 
 //*****************************************//
@@ -255,3 +288,5 @@ double toDouble(string s) {
 	ss >> d;
 	return d;
 }
+
+

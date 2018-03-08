@@ -26,14 +26,17 @@ int main(int argc, char** argv) {
 
 	vector<vector<string> > data;
 
-	node* root = NULL;
+	parseData(fin, data, attributes);
 
 	pair<int, int> x;
 
-	parseData(fin, data, attributes);
-	x = findSplitAttribute(data);
+	//x = findSplitAttribute(data); cout << x.first;
 
-	cout << x.first << ": " << x.second << endl;
+	node* root = buildTree(data, attributes);
+
+	//printTree(root, 0);
+
+
 	return 0;
 }
 
