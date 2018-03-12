@@ -7,7 +7,7 @@
 
 #include "DecisionTree.h"
 
-void parseData(ifstream &fin, vector<vector<string> > &data, vector<int> attributes) {
+void parseData(ifstream &fin, vector<vector<string> > &data) {
 	string tuple;
 	string delimiter = ",";
 	string token;
@@ -22,9 +22,12 @@ void parseData(ifstream &fin, vector<vector<string> > &data, vector<int> attribu
 			tuple.erase(0, position + delimiter.length());
 		}
 		tempVector.push_back(tuple);
+
+		if (!tempVector.back().empty() && tempVector.back()[tempVector.size() - 1] == '\r')
+			tempVector.back().erase(remove(tempVector.back().begin(), tempVector.back().end(), '\r'));
+
 		data.push_back(tempVector);
 	}
-	clearColumn(data, attributes);
 }
 
 void clearColumn(vector<vector<string> > &data, vector<int> attributes) {
@@ -45,13 +48,13 @@ void clearColumn(vector<vector<string> > &data, vector<int> attributes) {
 }
 
 void printTable(vector< vector<string> >data) {
-	for(unsigned int i=0; i < data.size(); i++) {
-		for(unsigned int j = 0; j < data[i].size(); j++) {
-			cout << data[i][j];
+	for(unsigned int i=0; i < /*data.size()*/500; i++) {
 
-			if(j != data[i].size()-1)
-				cout << " ";
-		}
+		cout << i << " - ";
+
+		for(unsigned int j = 0; j < data[i].size(); j++)
+			cout << setw(8) << left << data[i][j];
+		cout << endl;
 	}
 	cout << endl << "row count: " << data.size() << endl;
 }
@@ -83,15 +86,14 @@ void classCount(vector<vector<string> > data, vector<string> classList, vector<i
 		}
 }
 
-pair<int, double> calculateInfoGain(vector<vector<string> > &data, int column) {
+pair<double, double> calculateInfoGain(vector<vector<string> > data, int column) {
 	vector<string> classNames;
 	vector<int> numOfEach;
-	pair<int, double> infoSplit (0, 0);
+	pair<double, double> infoSplit (0, 0);		// stores first the split point threshold and then the info gain of that attribute
 
 	buildClassList(data, classNames);
 	classCount(data, classNames, numOfEach);
 
-	quickSort(data, 0, data.size()-1, data.size(), column);
 	double dataEntropy = 0;
 
 	for(int i=0; i < classNames.size(); i++)
@@ -100,62 +102,83 @@ pair<int, double> calculateInfoGain(vector<vector<string> > &data, int column) {
 	classNames.clear();
 	numOfEach.clear();
 
-	for(unsigned int i=1; i < data.size(); i++) {
-		double leftEntropy = 0;
-		double rightEntropy = 0;
+	double threshold = (toDouble(data[0][column]) + toDouble(data[data.size()-1][column])) / 2;
 
-		size_t split = i;
-		vector<vector<string> > left(data.begin(), data.begin() + split);
-		buildClassList(left, classNames);
-		classCount(left, classNames, numOfEach);
+	vector<vector<string> > left;
+	vector<vector<string> > right;
 
-		for(int i=0; i < classNames.size(); i++) {
-				leftEntropy -= (((double)numOfEach[i] / (double)left.size()) * log2((double)numOfEach[i] / (double)left.size()));
-				leftEntropy = ((double)left.size() / (double)data.size()) * leftEntropy;
-		}
+	splitData(data, left, right, threshold, column);
 
-		classNames.clear();
-		numOfEach.clear();
+	double leftEntropy = 0;
+	double rightEntropy = 0;
 
-		vector<vector<string> > right(data.begin() + split, data.end());
-		buildClassList(right, classNames);
-		classCount(right, classNames, numOfEach);
+	buildClassList(left, classNames);
+	classCount(left, classNames, numOfEach);
 
-		for(int i=0; i < classNames.size(); i++) {
-				rightEntropy -= (((double)numOfEach[i] / (double)right.size()) * log2((double)numOfEach[i] / (double)right.size()));
-				rightEntropy = ((double)right.size() / (double)data.size()) * rightEntropy;
-		}
-
-		double currentGain = dataEntropy - (leftEntropy + rightEntropy);
-
-		if(currentGain > infoSplit.second) {
-			infoSplit.second = currentGain;
-			infoSplit.first = static_cast<int>(split);
-		}
+	for(int i=0; i < classNames.size(); i++) {
+		leftEntropy -= (((double)numOfEach[i] / (double)left.size()) * log2((double)numOfEach[i] / (double)left.size()));
+		leftEntropy = ((double)left.size() / (double)data.size()) * leftEntropy;
 	}
+
+	classNames.clear();
+	numOfEach.clear();
+
+	buildClassList(right, classNames);
+	classCount(right, classNames, numOfEach);
+
+	for(int i=0; i < classNames.size(); i++) {
+		rightEntropy -= (((double)numOfEach[i] / (double)right.size()) * log2((double)numOfEach[i] / (double)right.size()));
+		rightEntropy = ((double)right.size() / (double)data.size()) * rightEntropy;
+	}
+
+	infoSplit.first = threshold;		//threshold used to find split point
+	infoSplit.second = dataEntropy - (leftEntropy + rightEntropy);	//entropy of attribute at given threshold
+
 	return infoSplit;
 }
 
-pair<int, int> findSplitAttribute(vector<vector<string> > data) {
-	vector<pair<int, double> > attributeInfo;			//stores optimal split point and info gain for each attribute
+pair<int, int> findSplitAttribute(vector<vector<string> > data, vector<int>attributeList) {
+	vector<pair<double, double> > attributeInfo(data[0].size()-1);			//stores threshold and info gain for each attribute
 	double highestGain = 0;
+	int splitAttribute;
+	int splitIndex = 0;
 
-	for(int i=0; i < data[0].size()-1; i++)
-		attributeInfo.push_back(calculateInfoGain(data, i));
-
-	pair<int, int> splitAttribute (0, 0);				//first = attribute index, second = split point
+	for(int i=0; i < attributeList.size(); i++) {
+		quickSort(data, 0, data.size()-1, data.size(), attributeList[i]);
+		attributeInfo[attributeList[i]] = (calculateInfoGain(data, attributeList[i]));
+	}
 
 	for(int i=0; i < attributeInfo.size(); i++) {
 		if(attributeInfo[i].second > highestGain) {
 			highestGain = attributeInfo[i].second;
-			splitAttribute.first = i;
-			splitAttribute.second = attributeInfo[i].first;
+			splitAttribute = i;
 		}
 	}
-	return splitAttribute;
+
+	quickSort(data, 0, data.size()-1, data.size(), splitAttribute);
+
+	while(toDouble(data[splitIndex][splitAttribute]) < attributeInfo[splitAttribute].first)
+		splitIndex++;
+
+	pair<int, int> selectedAttribute;		//stores first the index of attribute with highest gain and then the index to split attribute on
+	selectedAttribute.first = splitAttribute;
+	selectedAttribute.second = splitIndex;
+
+	//cout << "att - " << splitAttribute << "  index - " << splitIndex;
+
+	return selectedAttribute;
 }
 
-node* buildTree(vector<vector<string> > data, vector<int> attributes) {
+void splitData(vector<vector<string> > data, vector<vector<string> >&left, vector<vector<string> >&right, double threshold, int column) {
+	for(int i=0; i < data.size(); i++) {
+		if(toDouble(data[i][column]) < threshold)
+			left.push_back(data[i]);
+		else if(toDouble(data[i][column]) >= threshold)
+			right.push_back(data[i]);
+	}
+}
+
+node* buildTree(vector<vector<string> > data, vector<int> attributeList) {
 	vector<string> classList;
 	vector<int> numOfEach;
 	node* newNode = new node;
@@ -182,7 +205,7 @@ node* buildTree(vector<vector<string> > data, vector<int> attributes) {
 		return newNode;
 	}
 
-	if(attributes.size() == 0) {
+	if(attributeList.size() == 0) {
 
 		newNode->data = data;
 		newNode->label = largestClass;
@@ -192,14 +215,20 @@ node* buildTree(vector<vector<string> > data, vector<int> attributes) {
 		return newNode;
 	}
 
-	pair<int, int> splitAttribute = findSplitAttribute(data);
+	pair<int, int> splitAttribute = findSplitAttribute(data, attributeList);
 	int attribute = splitAttribute.first;
 	int splitIndex = splitAttribute.second;
 
-	cout << attribute << endl;
+	int tempIndex = find(attributeList.begin(), attributeList.end(), attribute) - attributeList.begin();
+	attributeList.erase(attributeList.begin() + tempIndex);
+
+	quickSort(data, 0, data.size()-1, data.size(), attribute);
+
+	stringstream ss;
+	ss << attribute;
 
 	newNode->data = data;
-	newNode->label = attribute;
+	newNode->label = ss.str();
 	newNode->isLeaf = false;
 	newNode->left = NULL;
 	newNode->right = NULL;
@@ -209,36 +238,43 @@ node* buildTree(vector<vector<string> > data, vector<int> attributes) {
 
 	if(left.size() == 0) {
 		node* leftNode = new node;
-		leftNode->label = largestClass;
+		leftNode->label = attribute;
 		leftNode->isLeaf = true;
 		leftNode->left = NULL;
 		leftNode->right = NULL;
 	}
 	else
-		newNode->left = buildTree(left, attributes);
+		newNode->left = buildTree(left, attributeList);
 
 	if(right.size() == 0) {
-			node* rightNode = new node;
-			rightNode->label = largestClass;
-			rightNode->isLeaf = true;
-			rightNode->left = NULL;
-			rightNode->right = NULL;
-		}
-		else
-			newNode->right = buildTree(right, attributes);
+		node* rightNode = new node;
+		rightNode->label = attribute;
+		rightNode->isLeaf = true;
+		rightNode->left = NULL;
+		rightNode->right = NULL;
+	}
+	else
+		newNode->right = buildTree(right, attributeList);
 
 	return newNode;
 }
 
-void printTree(node* currentNode, int depth) {
+void printTree(ofstream &fout, node* currentNode, string prefix, int depth) {
+	if(currentNode->isLeaf == true)
+		prefix = "leaf: ";
+	else
+		prefix = "node: ";
+
 	if(currentNode == NULL)
 		return;
 
-	if(depth == 0) {
-		cout << "root: " << currentNode->splitAttribute;
-	}
+	fout << setw(depth * 5) <<  prefix << (currentNode->label) << endl;
 
+	if(currentNode->left != NULL)
+		printTree(fout, currentNode->left, prefix, depth + 1);
 
+	if(currentNode->right != NULL)
+		printTree(fout, currentNode->right, prefix, depth + 1);
 }
 
 //*****************************************//

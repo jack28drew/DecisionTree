@@ -30,15 +30,16 @@ struct node {
 	node* right;
 };
 
-void parseData(ifstream&, vector<vector<string> >&, vector<int>);			//read file into 2d vector
+void parseData(ifstream&, vector<vector<string> >&);			//read file into 2d vector
 void clearColumn(vector<vector<string> >&, vector<int>);
 void printTable(vector<vector<string> >);
-void buildClassList(vector<vector<string> >&, vector<string>&, vector<int>&);
+void buildClassList(vector<vector<string> >, vector<string>&);
 void classCount(vector<vector<string> >, vector<string>, vector<int>&);
-pair<int,double> calculateInfoGain(vector<vector<string> >&, int column);	//calculates and returns optimal info gain and split point
-pair<int, int> findSplitAttribute(vector<vector<string> >);			//finds the split attribute index first and returns the split point along with
+void splitData(vector<vector<string> >, vector<vector<string> >&, vector<vector<string> >&, double, int);
+pair<double,double> calculateInfoGain(vector<vector<string> >, int column); //calculates and returns optimal info gain and split point
+pair<int, int> findSplitAttribute(vector<vector<string> >, vector<int>);			//finds the split attribute index first and returns the split point along with
 node* buildTree(vector<vector<string> >, vector<int>);
-void printTree(node*, int depth);
+void printTree(ofstream&, node*, string, int);
 
 int partition(vector<vector<string> >&, int, int, int);
 void quickSort(vector<vector<string> >&, int, int, int, int);

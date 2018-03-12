@@ -26,16 +26,16 @@ int main(int argc, char** argv) {
 
 	vector<vector<string> > data;
 
-	parseData(fin, data, attributes);
-
-	pair<int, int> x;
-
-	//x = findSplitAttribute(data); cout << x.first;
-
+	parseData(fin, data);
 	node* root = buildTree(data, attributes);
 
-	//printTree(root, 0);
+	ofstream fout;
+	fout.open("ouput.txt");
 
+	printTree(fout, root, "", 1);
+
+	fout.close();
+	fin.close();
 
 	return 0;
 }

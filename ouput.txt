@@ -1,0 +1,17 @@
+node: 2
+    node: 3
+         leaf: Iris-setosa
+         leaf: Iris-versicolor
+    node: 3
+         node: 1
+              node: 0
+                   leaf: Iris-versicolor
+                   leaf: Iris-versicolor
+              node: 0
+                   leaf: Iris-versicolor
+                   leaf: Iris-versicolor
+         node: 1
+              leaf: Iris-virginica
+              node: 0
+                   leaf: Iris-virginica
+                   leaf: Iris-virginica
